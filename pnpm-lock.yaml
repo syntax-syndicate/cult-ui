@@ -343,6 +343,9 @@ importers:
       media-chrome:
         specifier: ^4.17.2
         version: 4.17.2(react@19.2.4)
+      metal-fx:
+        specifier: ^1.0.4
+        version: 1.0.4(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       motion:
         specifier: ^12.35.2
         version: 12.35.2(@emotion/is-prop-valid@1.4.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -5872,6 +5875,12 @@ packages:
 
   meshoptimizer@0.18.1:
     resolution: {integrity: sha512-ZhoIoL7TNV4s5B6+rx5mC//fw8/POGyNxS/DZyCJeiZ12ScLfVwRE/GfsxwiTkMYYD5DmK2/JXnEVXqL4rF+Sw==}
+
+  metal-fx@1.0.4:
+    resolution: {integrity: sha512-Zqxp3df47n2yhp7SPMZtPdKQ7Avag8ITxXX1NtbA0bWdU2GJN8MJPNJ2SKtQ2CfXpAWXtCc0CbM64UtiTor3pw==}
+    peerDependencies:
+      react: '>=18.0.0'
+      react-dom: '>=18.0.0'
 
   micromark-core-commonmark@2.0.3:
     resolution: {integrity: sha512-RDBrHEMSxVFLg6xvnXmb1Ayr2WzLAWjeSATAoxwKYJV94TeNavgoIdA0a9ytzDSVzBy2YKFK+emCPOEibLeCrg==}
@@ -14079,6 +14088,11 @@ snapshots:
       uuid: 11.1.0
 
   meshoptimizer@0.18.1: {}
+
+  metal-fx@1.0.4(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+    dependencies:
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
 
   micromark-core-commonmark@2.0.3:
     dependencies:

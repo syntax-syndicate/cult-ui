@@ -3,6 +3,7 @@
 import { useId } from "react"
 import Image from "next/image"
 
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -19,6 +20,9 @@ import {
   ExpandableScreenContent,
   ExpandableScreenTrigger,
 } from "@/registry/default/ui/expandable-screen"
+
+const formFieldClassName =
+  "w-full rounded-lg border-0 bg-primary-foreground px-4 text-primary shadow-none placeholder:text-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm"
 
 function ExpandableScreenDemo() {
   const nameId = useId()
@@ -148,7 +152,7 @@ function ExpandableScreenDemo() {
                   type="text"
                   id={nameId}
                   name="name"
-                  className="w-full px-4 py-2.5 rounded-lg bg-card border-0 text-primary-foreground placeholder:text-primary-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary-foreground/20 transition-all text-sm h-10"
+                  className={cn(formFieldClassName, "h-10 py-2.5")}
                 />
               </div>
 
@@ -163,7 +167,7 @@ function ExpandableScreenDemo() {
                   type="email"
                   id={emailId}
                   name="email"
-                  className="w-full px-4 py-2.5 rounded-lg bg-card border-0 text-primary-foreground placeholder:text-primary-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary-foreground/20 transition-all text-sm h-10"
+                  className={cn(formFieldClassName, "h-10 py-2.5")}
                 />
               </div>
 
@@ -180,7 +184,7 @@ function ExpandableScreenDemo() {
                     id={websiteId}
                     name="use-case"
                     placeholder="e.g., Project management, Team collaboration"
-                    className="w-full px-4 py-2.5 rounded-lg bg-card border-0 text-primary-foreground placeholder:text-primary-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary-foreground/20 transition-all resize-none text-sm h-10"
+                    className={cn(formFieldClassName, "h-10 py-2.5")}
                   />
                 </div>
                 <div className="sm:w-32 w-full">
@@ -193,7 +197,7 @@ function ExpandableScreenDemo() {
                   <Select name="team-size">
                     <SelectTrigger
                       id={companySizeId}
-                      className="w-full px-4 py-2.5 rounded-lg bg-card border-0 text-primary-foreground focus:outline-none focus:ring-2 focus:ring-primary-foreground/20 transition-all text-sm h-10"
+                      className={cn(formFieldClassName, "h-10 py-2.5")}
                     >
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
@@ -220,7 +224,7 @@ function ExpandableScreenDemo() {
                   name="excited-about"
                   rows={3}
                   placeholder="Tell us what features you're looking forward to..."
-                  className="w-full px-4 py-3 rounded-lg bg-card border-0 text-primary-foreground placeholder:text-primary-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary-foreground/20 transition-all resize-none text-sm"
+                  className={cn(formFieldClassName, "resize-none py-3")}
                 />
               </div>
 

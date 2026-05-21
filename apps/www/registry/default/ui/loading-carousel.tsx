@@ -1,460 +1,366 @@
 // npm i embla-carousel-autoplay framer-motion lucide-react
 // npx shadcn@latest add carousel
-"use client"
+"use client";
 
-import React, { useCallback, useEffect, useState, type JSX } from "react"
-import Image from "next/image"
-import Autoplay from "embla-carousel-autoplay"
-import { ChevronRight } from "lucide-react"
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import Autoplay from "embla-carousel-autoplay";
+import { ChevronRight } from "lucide-react";
 import {
-  AnimatePresence,
-  motion,
-  MotionProps,
-  useAnimation,
-  Variants,
-} from "motion/react"
+	AnimatePresence,
+	motion,
+	useReducedMotion,
+	type Variants,
+} from "motion/react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-  type CarouselApi,
-} from "@/components/ui/carousel"
+	Carousel,
+	CarouselContent,
+	CarouselItem,
+	CarouselNext,
+	CarouselPrevious,
+	type CarouselApi,
+} from "@/components/ui/carousel";
 
 interface Tip {
-  text: string
-  image: string
-  url?: string
+	text: string;
+	image: string;
+	url?: string;
 }
 
 interface LoadingCarouselProps {
-  tips?: Tip[]
-  className?: string
-  autoplayInterval?: number
-  showNavigation?: boolean
-  showIndicators?: boolean
-  showProgress?: boolean
-  aspectRatio?: "video" | "square" | "wide"
-  textPosition?: "top" | "bottom"
-  onTipChange?: (index: number) => void
-  backgroundTips?: boolean
-  backgroundGradient?: boolean
-  shuffleTips?: boolean
-  animateText?: boolean
+	tips?: Tip[];
+	className?: string;
+	autoplayInterval?: number;
+	showNavigation?: boolean;
+	showIndicators?: boolean;
+	showProgress?: boolean;
+	aspectRatio?: "video" | "square" | "wide";
+	textPosition?: "top" | "bottom";
+	onTipChange?: (index: number) => void;
+	backgroundTips?: boolean;
+	backgroundGradient?: boolean;
+	shuffleTips?: boolean;
 }
 
 const defaultTips: Tip[] = [
-  {
-    text: "Backend snippets. Shadcn style headless components.. but for your backend.",
-    image: "/placeholders/cult-snips.png",
-    url: "https://www.newcult.co/backend",
-  },
-  {
-    text: "Create your first directory app today. AI batch scripts to process 100s of urls in seconds.",
-    image: "/placeholders/cult-dir.png",
-    url: "https://www.newcult.co/templates/cult-seo",
-  },
-  {
-    text: "Cult landing page template. Framer motion, shadcn, and tailwind.",
-    image: "/placeholders/cult-rune.png",
-    url: "https://www.newcult.co/templates/cult-landing-page",
-  },
-  {
-    text: "Vector embeddings, semantic search, and chat based vector retrieval on easy mode.",
-    image: "/placeholders/cult-manifest.png",
-    url: "https://www.newcult.co/templates/manifest",
-  },
-  {
-    text: "SEO analysis app. Scraping, analysis, insights, and AI recommendations.",
-    image: "/placeholders/cult-seo.png",
-    url: "https://www.newcult.co/templates/cult-seo",
-  },
-]
+	{
+		text: "Backend snippets. Shadcn style headless components.. but for your backend.",
+		image: "/placeholders/cult-snips.png",
+		url: "https://www.newcult.co/backend",
+	},
+	{
+		text: "Create your first directory app today. AI batch scripts to process 100s of urls in seconds.",
+		image: "/placeholders/cult-dir.png",
+		url: "https://www.newcult.co/templates/cult-seo",
+	},
+	{
+		text: "Cult landing page template. Framer motion, shadcn, and tailwind.",
+		image: "/placeholders/cult-rune.png",
+		url: "https://www.newcult.co/templates/cult-landing-page",
+	},
+	{
+		text: "Vector embeddings, semantic search, and chat based vector retrieval on easy mode.",
+		image: "/placeholders/cult-manifest.png",
+		url: "https://www.newcult.co/templates/manifest",
+	},
+	{
+		text: "SEO analysis app. Scraping, analysis, insights, and AI recommendations.",
+		image: "/placeholders/cult-seo.png",
+		url: "https://www.newcult.co/templates/cult-seo",
+	},
+];
 
 function shuffleArray<T>(array: T[]): T[] {
-  const shuffled = [...array]
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
-  }
-  return shuffled
+	const shuffled = [...array];
+	for (let i = shuffled.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+	}
+	return shuffled;
+}
+
+function getTipKey(tip: Tip): string {
+	return `${tip.text}-${tip.image}`;
 }
 
 const carouselVariants: Variants = {
-  enter: (direction: number) => ({
-    x: direction > 0 ? "100%" : "-100%",
-    opacity: 0,
-  }),
-  center: {
-    x: 0,
-    opacity: 1,
-  },
-  exit: (direction: number) => ({
-    x: direction < 0 ? "100%" : "-100%",
-    opacity: 0,
-  }),
-}
+	enter: (direction: number) => ({
+		x: direction > 0 ? "100%" : "-100%",
+		opacity: 0,
+	}),
+	center: {
+		x: 0,
+		opacity: 1,
+	},
+	exit: (direction: number) => ({
+		x: direction < 0 ? "100%" : "-100%",
+		opacity: 0,
+	}),
+};
 
 const textVariants: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { delay: 0.3, duration: 0.5 } },
-}
+	hidden: { opacity: 0, y: 20 },
+	visible: { opacity: 1, y: 0, transition: { delay: 0.3, duration: 0.5 } },
+};
 
 const aspectRatioClasses = {
-  video: "aspect-video",
-  square: "aspect-square",
-  wide: "aspect-[2/1]",
-}
+	video: "aspect-video",
+	square: "aspect-square",
+	wide: "aspect-[2/1]",
+};
 
 export function LoadingCarousel({
-  onTipChange,
-  className,
-  tips = defaultTips,
-  showProgress = true,
-  aspectRatio = "video",
-  showNavigation = false,
-  showIndicators = true,
-  backgroundTips = false,
-  textPosition = "bottom",
-  autoplayInterval = 4500,
-  backgroundGradient = false,
-  shuffleTips = false,
-  animateText = true,
+	onTipChange,
+	className,
+	tips = defaultTips,
+	showProgress = true,
+	aspectRatio = "video",
+	showNavigation = false,
+	showIndicators = true,
+	backgroundTips = false,
+	textPosition = "bottom",
+	autoplayInterval = 4500,
+	backgroundGradient = false,
+	shuffleTips = false,
 }: LoadingCarouselProps) {
-  const [progress, setProgress] = useState(0)
-  const [api, setApi] = useState<CarouselApi>()
-  const [current, setCurrent] = useState(0)
-  const [direction, setDirection] = useState(0)
-  const controls = useAnimation()
-  const [displayTips] = useState(() =>
-    shuffleTips ? shuffleArray(tips) : tips
-  )
+	const [api, setApi] = useState<CarouselApi>();
+	const [current, setCurrent] = useState(0);
+	const [direction, setDirection] = useState(0);
+	const prefersReducedMotion = useReducedMotion();
+	const [displayTips] = useState(() =>
+		shuffleTips ? shuffleArray(tips) : tips,
+	);
 
-  const autoplay = Autoplay({
-    delay: autoplayInterval,
-    stopOnInteraction: false,
-  })
+	const autoplay = useMemo(
+		() =>
+			Autoplay({
+				delay: autoplayInterval,
+				stopOnInteraction: false,
+			}),
+		[autoplayInterval],
+	);
 
-  useEffect(() => {
-    if (!api) {
-      return
-    }
+	useEffect(() => {
+		if (!api) {
+			return;
+		}
 
-    setCurrent(api.selectedScrollSnap())
-    setDirection(
-      api.scrollSnapList().indexOf(api.selectedScrollSnap()) - current
-    )
+		setCurrent(api.selectedScrollSnap());
+		setDirection(
+			api.scrollSnapList().indexOf(api.selectedScrollSnap()) - current,
+		);
 
-    const onSelect = () => {
-      const newIndex = api.selectedScrollSnap()
-      setCurrent(newIndex)
-      setDirection(api.scrollSnapList().indexOf(newIndex) - current)
-      onTipChange?.(newIndex)
-    }
+		const onSelect = () => {
+			const newIndex = api.selectedScrollSnap();
+			setCurrent(newIndex);
+			setDirection(api.scrollSnapList().indexOf(newIndex) - current);
+			onTipChange?.(newIndex);
+		};
 
-    api.on("select", onSelect)
+		api.on("select", onSelect);
 
-    return () => {
-      api.off("select", onSelect)
-    }
-  }, [api, current, onTipChange])
+		return () => {
+			api.off("select", onSelect);
+		};
+	}, [api, current, onTipChange]);
 
-  useEffect(() => {
-    if (!showProgress) return
+	const handleSelect = useCallback(
+		(index: number) => {
+			api?.scrollTo(index);
+		},
+		[api],
+	);
 
-    const timer = setInterval(() => {
-      setProgress((oldProgress) => {
-        if (oldProgress === 100) {
-          return 0
-        }
-        const diff = 2 // Constant increment for smoother progress
-        return Math.min(oldProgress + diff, 100)
-      })
-    }, autoplayInterval / 50)
+	return (
+		<motion.div
+			initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
+			animate={{ opacity: 1, y: 0 }}
+			transition={
+				prefersReducedMotion
+					? { duration: 0 }
+					: { duration: 0.8, ease: "easeOut" }
+			}
+			className={cn(
+				"mx-auto w-full max-w-6xl overflow-hidden rounded-xl bg-muted shadow-[0px_1px_1px_0px_rgba(0,0,0,0.05),0px_1px_1px_0px_rgba(255,252,240,0.5)_inset,0px_0px_0px_1px_hsla(0,0%,100%,0.1)_inset,0px_0px_1px_0px_rgba(28,27,26,0.5)]",
+				className,
+			)}
+		>
+			<div className="w-full overflow-hidden rounded-xl">
+				<Carousel
+					setApi={setApi}
+					plugins={[autoplay]}
+					className="relative w-full"
+					opts={{
+						loop: true,
+					}}
+				>
+					<CarouselContent>
+						<AnimatePresence initial={false} custom={direction}>
+							{(displayTips || []).map((tip) => (
+								<CarouselItem key={getTipKey(tip)} className="min-w-0">
+									<motion.div
+										variants={carouselVariants}
+										initial={prefersReducedMotion ? false : "enter"}
+										animate="center"
+										exit={prefersReducedMotion ? undefined : "exit"}
+										custom={direction}
+										transition={
+											prefersReducedMotion
+												? { duration: 0 }
+												: { duration: 0.8, ease: "easeInOut" }
+										}
+										className={`relative ${aspectRatioClasses[aspectRatio]} w-full overflow-hidden`}
+									>
+										<Image
+											src={tip.image}
+											alt={`Visual representation for tip: ${tip.text}`}
+											fill
+											className="object-cover"
+											priority
+										/>
+										{backgroundGradient && (
+											<div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/20 to-transparent" />
+										)}
 
-    return () => {
-      clearInterval(timer)
-    }
-  }, [showProgress, autoplayInterval])
+										{backgroundTips ? (
+											<motion.div
+												variants={textVariants}
+												initial={prefersReducedMotion ? false : "hidden"}
+												animate="visible"
+												className={`absolute ${
+													textPosition === "top" ? "top-0" : "bottom-0"
+												} left-0 right-0 min-w-0 p-4 sm:p-6 md:p-8`}
+											>
+												{displayTips[current]?.url ? (
+													<a
+														href={displayTips[current]?.url}
+														target="_blank"
+														rel="noopener noreferrer"
+														className="block min-w-0 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+													>
+														<p className="wrap-break-word text-center text-base font-medium leading-relaxed tracking-tight text-white text-pretty sm:text-lg md:text-left md:text-xl lg:text-2xl lg:font-bold">
+															{tip.text}
+														</p>
+													</a>
+												) : (
+													<p className="wrap-break-word text-center text-base font-medium leading-relaxed tracking-tight text-white text-pretty sm:text-lg md:text-left md:text-xl lg:text-2xl lg:font-bold">
+														{tip.text}
+													</p>
+												)}
+											</motion.div>
+										) : null}
+									</motion.div>
+								</CarouselItem>
+							))}
+						</AnimatePresence>
+					</CarouselContent>
+					{showNavigation && (
+						<>
+							<CarouselPrevious className="absolute left-2 top-1/2 h-10 w-10 -translate-y-1/2 transition-transform active:scale-[0.96]" />
+							<CarouselNext className="absolute right-2 top-1/2 h-10 w-10 -translate-y-1/2 transition-transform active:scale-[0.96]" />
+						</>
+					)}
+				</Carousel>
+				<div
+					className={cn(
+						"bg-muted p-4 sm:p-5",
+						showIndicators && !backgroundTips ? "lg:px-4 lg:py-3" : "",
+					)}
+				>
+					<div
+						className={cn(
+							"flex min-w-0 flex-col items-start justify-between gap-3 sm:flex-row sm:items-center",
+							showIndicators && !backgroundTips
+								? "sm:flex-col sm:items-start"
+								: "",
+						)}
+					>
+						{showIndicators && (
+							<div className="flex w-full gap-2 overflow-x-auto pb-1 sm:pb-0">
+								{(displayTips || []).map((tip, index) => {
+									const isActive = index === current;
+									const isComplete = index < current;
 
-  useEffect(() => {
-    if (progress === 100) {
-      controls.start({ scaleX: 0 }).then(() => {
-        setProgress(0)
-        controls.set({ scaleX: 1 })
-      })
-    } else {
-      controls.start({ scaleX: progress / 100 })
-    }
-  }, [progress, controls])
-
-  const handleSelect = useCallback(
-    (index: number) => {
-      api?.scrollTo(index)
-    },
-    [api]
-  )
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, ease: "easeOut" }}
-      className={cn(
-        "w-full max-w-6xl mx-auto rounded-lg bg-muted shadow-[0px_1px_1px_0px_rgba(0,0,0,0.05),0px_1px_1px_0px_rgba(255,252,240,0.5)_inset,0px_0px_0px_1px_hsla(0,0%,100%,0.1)_inset,0px_0px_1px_0px_rgba(28,27,26,0.5)]",
-        className
-      )}
-    >
-      <div className="w-full overflow-hidden rounded-lg">
-        <Carousel
-          setApi={setApi}
-          plugins={[autoplay]}
-          className="w-full relative"
-          opts={{
-            loop: true,
-          }}
-        >
-          <CarouselContent>
-            <AnimatePresence initial={false} custom={direction}>
-              {(displayTips || []).map((tip, index) => (
-                <CarouselItem key={index}>
-                  <motion.div
-                    variants={carouselVariants}
-                    initial="enter"
-                    animate="center"
-                    exit="exit"
-                    custom={direction}
-                    transition={{ duration: 0.8, ease: "easeInOut" }}
-                    className={`relative ${aspectRatioClasses[aspectRatio]} w-full overflow-hidden`}
-                  >
-                    <Image
-                      src={tip.image}
-                      alt={`Visual representation for tip: ${tip.text}`}
-                      fill
-                      className="object-cover"
-                      priority
-                    />
-                    {backgroundGradient && (
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-                    )}
-
-                    {backgroundTips ? (
-                      <motion.div
-                        variants={textVariants}
-                        initial="hidden"
-                        animate="visible"
-                        className={`absolute ${
-                          textPosition === "top" ? "top-0" : "bottom-0"
-                        } left-0 right-0 p-4 sm:p-6 md:p-8`}
-                      >
-                        {displayTips[current]?.url ? (
-                          <a
-                            href={displayTips[current]?.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <p className="text-white text-center md:text-left text-base sm:text-lg md:text-xl lg:text-2xl lg:font-bold tracking-tight font-medium leading-relaxed">
-                              {tip.text}
-                            </p>
-                          </a>
-                        ) : (
-                          <p className="text-white text-center md:text-left text-base sm:text-lg md:text-xl lg:text-2xl lg:font-bold tracking-tight font-medium leading-relaxed">
-                            {tip.text}
-                          </p>
-                        )}
-                      </motion.div>
-                    ) : null}
-                  </motion.div>
-                </CarouselItem>
-              ))}
-            </AnimatePresence>
-          </CarouselContent>
-          {showNavigation && (
-            <>
-              <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2" />
-              <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2" />
-            </>
-          )}
-        </Carousel>
-        <div
-          className={cn(
-            "bg-muted p-4 ",
-            showIndicators && !backgroundTips ? "lg:py-2 lg:px-4 " : ""
-          )}
-        >
-          <div
-            className={cn(
-              "flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0",
-              showIndicators && !backgroundTips
-                ? "sm:flex-col space-y-2 items-start gap-3"
-                : ""
-            )}
-          >
-            {showIndicators && (
-              <div className="flex space-x-2 overflow-x-auto pb-2 sm:pb-0 w-full sm:w-auto">
-                {(displayTips || []).map((_, index) => (
-                  <motion.button
-                    key={index}
-                    className={`h-1 w-8 flex-shrink-0 rounded-full ${
-                      index === current ? "bg-muted" : "bg-primary"
-                    }`}
-                    initial={false}
-                    animate={{
-                      backgroundColor:
-                        index === current ? "#3D3D3E" : "#E6E6E4",
-                    }}
-                    transition={{ duration: 0.5 }}
-                    onClick={() => handleSelect(index)}
-                    aria-label={`Go to tip ${index + 1}`}
-                  />
-                ))}
-              </div>
-            )}
-            <div className="flex items-center space-x-2 text-primary whitespace-nowrap">
-              {backgroundTips ? (
-                <span className="text-sm font-medium">
-                  Tip {current + 1}/{displayTips?.length || 0}
-                </span>
-              ) : (
-                <div className="flex flex-col">
-                  {displayTips[current]?.url ? (
-                    <a
-                      href={displayTips[current]?.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-base lg:text-2xl xl:font-semibold tracking-tight font-medium"
-                    >
-                      {animateText ? (
-                        <TextScramble
-                          key={displayTips[current]?.text}
-                          duration={1.2}
-                          characterSet=". "
-                        >
-                          {displayTips[current]?.text}
-                        </TextScramble>
-                      ) : (
-                        displayTips[current]?.text
-                      )}
-                    </a>
-                  ) : (
-                    <span className="text-base lg:text-2xl xl:font-semibold tracking-tight font-medium">
-                      {animateText ? (
-                        <TextScramble
-                          key={displayTips[current]?.text}
-                          duration={1.2}
-                          characterSet=". "
-                        >
-                          {displayTips[current]?.text}
-                        </TextScramble>
-                      ) : (
-                        displayTips[current]?.text
-                      )}
-                    </span>
-                  )}
-                </div>
-              )}
-              {backgroundTips && <ChevronRight className="w-4 h-4" />}
-            </div>
-          </div>
-          {showProgress && (
-            <motion.div
-              initial={{ scaleX: 0 }}
-              animate={controls}
-              transition={{ duration: 0.5, ease: "linear" }}
-              className="h-1 bg-muted origin-left mt-2"
-            />
-          )}
-        </div>
-      </div>
-    </motion.div>
-  )
+									return (
+										<button
+											key={getTipKey(tip)}
+											type="button"
+											className="flex h-10 min-w-8 flex-1 items-center rounded-full transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-muted active:scale-[0.96] sm:min-w-0 sm:shrink"
+											onClick={() => handleSelect(index)}
+											aria-label={`Go to tip ${index + 1}`}
+											aria-current={isActive ? "true" : undefined}
+										>
+											<span className="relative h-1 w-full overflow-hidden rounded-full bg-foreground/15">
+												{showProgress ? (
+													isComplete ? (
+														<span className="absolute inset-0 rounded-full bg-foreground/70" />
+													) : isActive ? (
+														<motion.span
+															key={current}
+															initial={{ scaleX: prefersReducedMotion ? 1 : 0 }}
+															animate={{ scaleX: 1 }}
+															transition={
+																prefersReducedMotion
+																	? { duration: 0 }
+																	: {
+																			duration: autoplayInterval / 1000,
+																			ease: "linear",
+																		}
+															}
+															className="absolute inset-0 origin-left rounded-full bg-foreground/70"
+														/>
+													) : null
+												) : (
+													<span
+														className={cn(
+															"absolute inset-0 origin-left rounded-full bg-foreground/70 transition-transform",
+															prefersReducedMotion
+																? "duration-0"
+																: "duration-300 ease-out",
+															isActive ? "scale-x-100" : "scale-x-0",
+														)}
+													/>
+												)}
+											</span>
+										</button>
+									);
+								})}
+							</div>
+						)}
+						<div className="flex min-w-0 items-center gap-2 text-primary">
+							{backgroundTips ? (
+								<span className="whitespace-nowrap text-sm font-medium tabular-nums">
+									Tip {current + 1}/{displayTips?.length || 0}
+								</span>
+							) : (
+								<div className="min-w-0 max-w-full">
+									{displayTips[current]?.url ? (
+										<a
+											href={displayTips[current]?.url}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="wrap-break-word block max-w-full rounded-sm text-base font-medium leading-tight tracking-tight text-pretty focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-muted lg:text-xl xl:font-semibold"
+										>
+											{displayTips[current]?.text}
+										</a>
+									) : (
+										<span className="wrap-break-word block max-w-full text-base font-medium leading-tight tracking-tight text-pretty lg:text-2xl xl:font-semibold">
+											{displayTips[current]?.text}
+										</span>
+									)}
+								</div>
+							)}
+							{backgroundTips && (
+								<ChevronRight aria-hidden="true" className="h-4 w-4" />
+							)}
+						</div>
+					</div>
+				</div>
+			</div>
+		</motion.div>
+	);
 }
 
-// Credit -> https://motion-primitives.com/docs/text-scramble
-// https://x.com/Ibelick
-type TextScrambleProps = {
-  children: string
-  duration?: number
-  speed?: number
-  characterSet?: string
-  as?: React.ElementType
-  className?: string
-  trigger?: boolean
-  onScrambleComplete?: () => void
-} & MotionProps
-
-const defaultChars =
-  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-
-function TextScramble({
-  children,
-  duration = 0.8,
-  speed = 0.04,
-  characterSet = defaultChars,
-  className,
-  as: Component = "p",
-  trigger = true,
-  onScrambleComplete,
-  ...props
-}: TextScrambleProps) {
-  const MotionComponent = motion.create(
-    Component as keyof JSX.IntrinsicElements
-  )
-  const [displayText, setDisplayText] = useState(children)
-  const [isAnimating, setIsAnimating] = useState(false)
-  const text = children
-
-  const scramble = async () => {
-    if (isAnimating) return
-    setIsAnimating(true)
-
-    const steps = duration / speed
-    let step = 0
-
-    const interval = setInterval(() => {
-      let scrambled = ""
-      const progress = step / steps
-
-      for (let i = 0; i < text.length; i++) {
-        if (text[i] === " ") {
-          scrambled += " "
-          continue
-        }
-
-        if (progress * text.length > i) {
-          scrambled += text[i]
-        } else {
-          scrambled +=
-            characterSet[Math.floor(Math.random() * characterSet.length)]
-        }
-      }
-
-      setDisplayText(scrambled)
-      step++
-
-      if (step > steps) {
-        clearInterval(interval)
-        setDisplayText(text)
-        setIsAnimating(false)
-        onScrambleComplete?.()
-      }
-    }, speed * 1000)
-  }
-
-  useEffect(() => {
-    if (!trigger) return
-
-    scramble()
-  }, [trigger])
-
-  return (
-    <MotionComponent className={className} {...props}>
-      {displayText}
-    </MotionComponent>
-  )
-}
-
-export default LoadingCarousel
+export default LoadingCarousel;

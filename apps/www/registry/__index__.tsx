@@ -913,7 +913,7 @@ export const Index: Record<string, any> = {
     description:
       "Loading carousel component with smooth transitions and customizable content",
     type: "registry:ui",
-    registryDependencies: undefined,
+    registryDependencies: ["carousel"],
     files: [
       {
         path: "registry/default/ui/loading-carousel.tsx",
@@ -1048,6 +1048,56 @@ export const Index: Record<string, any> = {
     ],
     component: React.lazy(async () => {
       const mod = await import("@/registry/default/ui/choice-poll.tsx")
+      const exportName =
+        Object.keys(mod).find(
+          (key) =>
+            typeof mod[key] === "function" || typeof mod[key] === "object"
+        ) || item.name
+      return { default: mod.default || mod[exportName] }
+    }),
+    categories: undefined,
+    meta: undefined,
+  },
+  "feature-poll": {
+    name: "feature-poll",
+    description:
+      "Feature poll component with single or multiple selection, optional results, and keyboard navigation",
+    type: "registry:ui",
+    registryDependencies: undefined,
+    files: [
+      {
+        path: "registry/default/ui/feature-poll.tsx",
+        type: "registry:ui",
+        target: "",
+      },
+    ],
+    component: React.lazy(async () => {
+      const mod = await import("@/registry/default/ui/feature-poll.tsx")
+      const exportName =
+        Object.keys(mod).find(
+          (key) =>
+            typeof mod[key] === "function" || typeof mod[key] === "object"
+        ) || item.name
+      return { default: mod.default || mod[exportName] }
+    }),
+    categories: undefined,
+    meta: undefined,
+  },
+  "feature-voting": {
+    name: "feature-voting",
+    description:
+      "List of features with up-vote support, optional sorting by vote count, and controlled or uncontrolled state",
+    type: "registry:ui",
+    registryDependencies: undefined,
+    files: [
+      {
+        path: "registry/default/ui/feature-voting.tsx",
+        type: "registry:ui",
+        target: "",
+      },
+    ],
+    component: React.lazy(async () => {
+      const mod = await import("@/registry/default/ui/feature-voting.tsx")
       const exportName =
         Object.keys(mod).find(
           (key) =>
@@ -1473,6 +1523,31 @@ export const Index: Record<string, any> = {
     ],
     component: React.lazy(async () => {
       const mod = await import("@/registry/default/ui/mock-browser-window.tsx")
+      const exportName =
+        Object.keys(mod).find(
+          (key) =>
+            typeof mod[key] === "function" || typeof mod[key] === "object"
+        ) || item.name
+      return { default: mod.default || mod[exportName] }
+    }),
+    categories: undefined,
+    meta: undefined,
+  },
+  "metal-button": {
+    name: "metal-button",
+    description:
+      "Shadcn Button wrapped in MetalFx: animated liquid metal ring with text and icon variants",
+    type: "registry:ui",
+    registryDependencies: ["button"],
+    files: [
+      {
+        path: "registry/default/ui/metal-button.tsx",
+        type: "registry:ui",
+        target: "",
+      },
+    ],
+    component: React.lazy(async () => {
+      const mod = await import("@/registry/default/ui/metal-button.tsx")
       const exportName =
         Object.keys(mod).find(
           (key) =>
@@ -2989,6 +3064,58 @@ export const Index: Record<string, any> = {
     categories: undefined,
     meta: undefined,
   },
+  "feature-poll-demo": {
+    name: "feature-poll-demo",
+    description: "",
+    type: "registry:component",
+    registryDependencies: ["feature-poll"],
+    files: [
+      {
+        path: "registry/default/example/feature-poll-demo.tsx",
+        type: "registry:component",
+        target: "",
+      },
+    ],
+    component: React.lazy(async () => {
+      const mod = await import(
+        "@/registry/default/example/feature-poll-demo.tsx"
+      )
+      const exportName =
+        Object.keys(mod).find(
+          (key) =>
+            typeof mod[key] === "function" || typeof mod[key] === "object"
+        ) || item.name
+      return { default: mod.default || mod[exportName] }
+    }),
+    categories: undefined,
+    meta: undefined,
+  },
+  "feature-voting-demo": {
+    name: "feature-voting-demo",
+    description: "",
+    type: "registry:component",
+    registryDependencies: ["feature-voting"],
+    files: [
+      {
+        path: "registry/default/example/feature-voting-demo.tsx",
+        type: "registry:component",
+        target: "",
+      },
+    ],
+    component: React.lazy(async () => {
+      const mod = await import(
+        "@/registry/default/example/feature-voting-demo.tsx"
+      )
+      const exportName =
+        Object.keys(mod).find(
+          (key) =>
+            typeof mod[key] === "function" || typeof mod[key] === "object"
+        ) || item.name
+      return { default: mod.default || mod[exportName] }
+    }),
+    categories: undefined,
+    meta: undefined,
+  },
   "vote-tally-demo": {
     name: "vote-tally-demo",
     description: "",
@@ -3389,6 +3516,32 @@ export const Index: Record<string, any> = {
     ],
     component: React.lazy(async () => {
       const mod = await import("@/registry/default/example/code-block-demo.tsx")
+      const exportName =
+        Object.keys(mod).find(
+          (key) =>
+            typeof mod[key] === "function" || typeof mod[key] === "object"
+        ) || item.name
+      return { default: mod.default || mod[exportName] }
+    }),
+    categories: undefined,
+    meta: undefined,
+  },
+  "metal-button-demo": {
+    name: "metal-button-demo",
+    description: "",
+    type: "registry:component",
+    registryDependencies: ["metal-button"],
+    files: [
+      {
+        path: "registry/default/example/metal-button-demo.tsx",
+        type: "registry:component",
+        target: "",
+      },
+    ],
+    component: React.lazy(async () => {
+      const mod = await import(
+        "@/registry/default/example/metal-button-demo.tsx"
+      )
       const exportName =
         Object.keys(mod).find(
           (key) =>

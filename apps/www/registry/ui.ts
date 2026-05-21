@@ -472,7 +472,8 @@ export const ui: Registry["items"] = [
   {
     name: "loading-carousel",
     type: "registry:ui",
-    dependencies: ["motion"],
+    dependencies: ["embla-carousel-autoplay", "lucide-react", "motion"],
+    registryDependencies: ["carousel"],
     files: [
       {
         path: "registry/default/ui/loading-carousel.tsx",
@@ -546,6 +547,32 @@ export const ui: Registry["items"] = [
     ],
     description:
       "Poll component with single or multiple selection, optional results, and keyboard navigation",
+  },
+  {
+    name: "feature-poll",
+    type: "registry:ui",
+    dependencies: ["@radix-ui/react-use-controllable-state", "lucide-react"],
+    files: [
+      {
+        path: "registry/default/ui/feature-poll.tsx",
+        type: "registry:ui",
+      },
+    ],
+    description:
+      "Feature poll component with single or multiple selection, optional results, and keyboard navigation",
+  },
+  {
+    name: "feature-voting",
+    type: "registry:ui",
+    dependencies: ["@radix-ui/react-use-controllable-state"],
+    files: [
+      {
+        path: "registry/default/ui/feature-voting.tsx",
+        type: "registry:ui",
+      },
+    ],
+    description:
+      "List of features with up-vote support, optional sorting by vote count, and controlled or uncontrolled state",
   },
   {
     name: "vote-tally",
@@ -773,6 +800,20 @@ export const ui: Registry["items"] = [
     ],
     description:
       "A customizable browser window mockup component with support for Chrome, Safari, and generic styles, customizable sidebars, and themes",
+  },
+  {
+    name: "metal-button",
+    type: "registry:ui",
+    dependencies: ["metal-fx"],
+    registryDependencies: ["button"],
+    files: [
+      {
+        path: "registry/default/ui/metal-button.tsx",
+        type: "registry:ui",
+      },
+    ],
+    description:
+      "Shadcn Button wrapped in MetalFx: animated liquid metal ring with text and icon variants",
   },
   {
     name: "morph-surface",

@@ -187,31 +187,6 @@ export default function SvgBandsDemo() {
             />
           </BandTile>
         </DemoSection>
-
-        <section className="w-full space-y-4">
-          <h3 className="text-foreground text-sm font-semibold tracking-tight">
-            BandShape flip prop
-          </h3>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {(
-              [
-                ["none", "none"],
-                ["vertical", "vertical"],
-                ["horizontal", "horizontal"],
-                ["both axes", "both"],
-              ] as const
-            ).map(([label, flip]) => (
-              <BandTile key={flip} label={label}>
-                <BandShape
-                  flip={flip}
-                  path="M1 199V6C1 3 3 1 6 1H2394C2397 1 2399 3 2399 6V199H1Z"
-                  title="Slab band flip demo"
-                  viewBox="0 0 2400 200"
-                />
-              </BandTile>
-            ))}
-          </div>
-        </section>
       </div>
     </div>
   )

@@ -37,7 +37,7 @@ function LabelBadge({ label }: { label?: string }) {
 
 	if (label === "new") {
 		return (
-			<span className="rounded-sm border border-black bg-[#adfa1d] px-1.5 py-0.5 text-[10px] leading-none text-black">
+			<span className="shrink-0 rounded-sm border border-black bg-[#adfa1d] px-1.5 py-0.5 text-[10px] leading-none text-black">
 				{label}
 			</span>
 		);
@@ -45,7 +45,7 @@ function LabelBadge({ label }: { label?: string }) {
 
 	if (label === "recent") {
 		return (
-			<span className="rounded-sm border border-black bg-cyan-200 px-1.5 py-0.5 text-[10px] leading-none text-black">
+			<span className="shrink-0 rounded-sm border border-black bg-cyan-200 px-1.5 py-0.5 text-[10px] leading-none text-black">
 				{label}
 			</span>
 		);
@@ -53,14 +53,14 @@ function LabelBadge({ label }: { label?: string }) {
 
 	if (label === "updated") {
 		return (
-			<span className="rounded-sm border border-black bg-pink-400 px-1.5 py-0.5 text-[10px] leading-none text-black">
+			<span className="shrink-0 rounded-sm border border-black bg-pink-400 px-1.5 py-0.5 text-[10px] leading-none text-black">
 				{label}
 			</span>
 		);
 	}
 
 	return (
-		<span className="rounded-sm bg-muted px-1.5 py-0.5 text-[10px] leading-none text-foreground">
+		<span className="shrink-0 rounded-sm bg-muted px-1.5 py-0.5 text-[10px] leading-none text-foreground">
 			{label}
 		</span>
 	);
@@ -82,13 +82,16 @@ function DocsSidebarItems({
 				const isActive = getIsActive(pathname, item.href);
 
 				return (
-					<SidebarMenuItem key={`${item.title}-${index}`}>
+					<SidebarMenuItem
+						key={`${item.title}-${index}`}
+						className="mr-1 hover:cursor-pointer"
+					>
 						{item.href && !item.disabled ? (
 							<SidebarMenuButton
 								asChild
 								isActive={isActive}
 								className={cn(
-									"justify-between ",
+									"min-w-0 justify-between gap-2 ",
 									depth > 0 && "h-7 text-[0.75rem]",
 									item.external && "pr-3",
 								)}
@@ -99,18 +102,18 @@ function DocsSidebarItems({
 									rel={item.external ? "noreferrer" : undefined}
 									data-sidebar-active={isActive ? "true" : undefined}
 								>
-									<span className="truncate">{item.title}</span>
+									<span className="min-w-0 flex-1 truncate">{item.title}</span>
 									<LabelBadge label={item.label} />
 								</Link>
 							</SidebarMenuButton>
 						) : (
 							<div
 								className={cn(
-									"flex h-8 items-center justify-between rounded-md px-2 text-[1rem] font-medium font-pixel-square text-foreground",
+									"flex h-8 min-w-0 items-center justify-between gap-2 rounded-md px-2 text-[1rem] font-medium font-pixel-square text-foreground",
 									depth > 0 && "h-7 text-[0.75rem]",
 								)}
 							>
-								<span className="truncate">{item.title}</span>
+								<span className="min-w-0 flex-1 truncate">{item.title}</span>
 								<LabelBadge label={item.label} />
 							</div>
 						)}

@@ -475,6 +475,28 @@ export const examples: Registry["items"] = [
     ],
   },
   {
+    name: "feature-poll-demo",
+    type: "registry:component",
+    registryDependencies: ["feature-poll"],
+    files: [
+      {
+        path: "registry/default/example/feature-poll-demo.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "feature-voting-demo",
+    type: "registry:component",
+    registryDependencies: ["feature-voting"],
+    files: [
+      {
+        path: "registry/default/example/feature-voting-demo.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "vote-tally-demo",
     type: "registry:component",
     registryDependencies: ["vote-tally"],
@@ -652,6 +674,17 @@ export const examples: Registry["items"] = [
     files: [
       {
         path: "registry/default/example/code-block-demo.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "metal-button-demo",
+    type: "registry:component",
+    registryDependencies: ["metal-button"],
+    files: [
+      {
+        path: "registry/default/example/metal-button-demo.tsx",
         type: "registry:component",
       },
     ],

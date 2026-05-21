@@ -1,5 +1,5 @@
 import * as React from "react"
-import Image from "next/image"
+import NextImage from "next/image"
 import Link from "next/link"
 
 import { cn } from "@/lib/utils"
@@ -278,10 +278,10 @@ export const mdxComponents = {
     height,
     alt,
     ...props
-  }: React.ComponentProps<"img">) => (
-    <Image
+  }: React.ComponentProps<typeof NextImage>) => (
+    <NextImage
       className={cn("mt-6 rounded-md border", className)}
-      src={src || ""}
+      src={src}
       width={Number(width)}
       height={Number(height)}
       alt={alt || ""}

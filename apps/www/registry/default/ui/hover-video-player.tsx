@@ -23,8 +23,8 @@
  * ```
  */
 import React, {
-  createContext,
   ReactNode,
+  createContext,
   useCallback,
   useContext,
   useEffect,
@@ -34,11 +34,22 @@ import React, {
 } from "react"
 import Image from "next/image"
 import { Maximize, Minimize, Pause, Play, Volume2, VolumeX } from "lucide-react"
-import { AnimatePresence, motion } from "motion/react"
+import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
+
+const hoverTransition = {
+  duration: 0.18,
+  ease: [0.2, 0, 0, 1],
+} as const
+
+const hoverSpring = {
+  type: "spring",
+  duration: 0.3,
+  bounce: 0,
+} as const
 
 // Types
 interface VideoPlayerState {
@@ -95,6 +106,12 @@ interface HoverVideoPlayerContextType {
   togglePiP: () => void
   setVolume: (value: number) => void
   setProgress: (value: number) => void
+  seekProgress: (value: number) => void
+  setSeekProgressHandler: (
+    handler: ((value: number) => void | Promise<void>) | null
+  ) => void
+  setVideoLoading: (isLoading: boolean) => void
+  setVideoPlaying: (isPlaying: boolean) => void
   cropTop: number
   cropBottom: number
   thumbnailSrc?: string
@@ -104,6 +121,8 @@ interface VimeoPlayer {
   destroy: () => void
   ready: () => Promise<void>
   setVolume: (volume: number) => Promise<void>
+  getDuration: () => Promise<number>
+  setCurrentTime: (seconds: number) => Promise<number>
   play: () => Promise<void>
   pause: () => Promise<void>
   on: (event: string, callback: (...args: any[]) => void) => void
@@ -205,11 +224,16 @@ const HoverVideoPlayer: React.FC<HoverVideoPlayerProps> = ({
   cropBottom = 0,
   isVimeo = false,
 }) => {
+  const isVimeoVideo = isVimeo || isVimeoUrl(videoSrc)
+
   // Refs for DOM elements and timing
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const playbackTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const lastPlayAttemptRef = useRef<number>(0)
+  const seekProgressHandlerRef = useRef<
+    ((value: number) => void | Promise<void>) | null
+  >(null)
 
   // Consolidated state management
   const [state, setState] = useState<VideoPlayerState>({
@@ -404,6 +428,12 @@ const HoverVideoPlayer: React.FC<HoverVideoPlayerProps> = ({
           playVideo()
         }
       },
+      timeupdate: () => {
+        if (!Number.isFinite(video.duration) || video.duration <= 0) return
+
+        const nextProgress = (video.currentTime / video.duration) * 100
+        setState((prev) => ({ ...prev, progress: nextProgress }))
+      },
       canplay: () => {
         console.log("Video canplay event")
       },
@@ -478,6 +508,10 @@ const HoverVideoPlayer: React.FC<HoverVideoPlayerProps> = ({
       return
     }
 
+    if (isVimeoVideo) {
+      return
+    }
+
     let playbackTimeout: NodeJS.Timeout | undefined
 
     if (state.isMobile) {
@@ -516,6 +550,7 @@ const HoverVideoPlayer: React.FC<HoverVideoPlayerProps> = ({
     playVideo,
     pauseVideo,
     playbackStartDelay,
+    isVimeoVideo,
   ])
 
   // Volume effect
@@ -556,6 +591,50 @@ const HoverVideoPlayer: React.FC<HoverVideoPlayerProps> = ({
     }
   }, [])
 
+  const setSeekProgressHandler = useCallback(
+    (handler: ((value: number) => void | Promise<void>) | null) => {
+      seekProgressHandlerRef.current = handler
+    },
+    []
+  )
+
+  const seekProgress = useCallback((value: number) => {
+    const nextProgress = Math.min(100, Math.max(0, value))
+    setState((prev) => ({ ...prev, progress: nextProgress }))
+
+    if (seekProgressHandlerRef.current) {
+      void seekProgressHandlerRef.current(nextProgress)
+      return
+    }
+
+    const video = videoRef.current
+    if (!video || !Number.isFinite(video.duration) || video.duration <= 0) {
+      return
+    }
+
+    video.currentTime = (nextProgress / 100) * video.duration
+  }, [])
+
+  const setProgress = useCallback((value: number) => {
+    setState((prev) => ({ ...prev, progress: value }))
+  }, [])
+
+  const setVolume = useCallback((value: number) => {
+    setState((prev) => ({ ...prev, volume: value }))
+  }, [])
+
+  const setVideoLoading = useCallback((isLoading: boolean) => {
+    setState((prev) => ({ ...prev, isLoading }))
+  }, [])
+
+  const setVideoPlaying = useCallback((isPlaying: boolean) => {
+    setState((prev) => ({
+      ...prev,
+      isPlaying,
+      showThumbnail: !isPlaying,
+    }))
+  }, [])
+
   // Context value
   const contextValue = useMemo<HoverVideoPlayerContextType>(
     () => ({
@@ -572,9 +651,12 @@ const HoverVideoPlayer: React.FC<HoverVideoPlayerProps> = ({
       togglePlay: togglePlayPause,
       toggleMute,
       togglePiP,
-      setVolume: (value) => setState((prev) => ({ ...prev, volume: value })),
-      setProgress: (value) =>
-        setState((prev) => ({ ...prev, progress: value })),
+      setVolume,
+      setProgress,
+      seekProgress,
+      setSeekProgressHandler,
+      setVideoLoading,
+      setVideoPlaying,
       cropTop,
       cropBottom,
       thumbnailSrc,
@@ -584,6 +666,12 @@ const HoverVideoPlayer: React.FC<HoverVideoPlayerProps> = ({
       togglePlayPause,
       toggleMute,
       togglePiP,
+      setVolume,
+      setProgress,
+      seekProgress,
+      setSeekProgressHandler,
+      setVideoLoading,
+      setVideoPlaying,
       cropTop,
       cropBottom,
       thumbnailSrc,
@@ -607,10 +695,6 @@ const HoverVideoPlayer: React.FC<HoverVideoPlayerProps> = ({
         onHoverStart={handleHoverStart}
         onHoverEnd={handleHoverEnd}
         onTouchStart={handleTouchStart}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.3 }}
       >
         {/* Video Element */}
         {state.isInView && (
@@ -623,9 +707,7 @@ const HoverVideoPlayer: React.FC<HoverVideoPlayerProps> = ({
         )}
 
         {/* Thumbnail */}
-        {thumbnailSrc && (state.showThumbnail || !state.isInView) && (
-          <HoverVideoPlayerThumbnail src={thumbnailSrc} />
-        )}
+        {thumbnailSrc && <HoverVideoPlayerThumbnail src={thumbnailSrc} />}
 
         {/* Overlays */}
         {pausedOverlay && (
@@ -668,18 +750,36 @@ const HoverVideoPlayerVideo: React.FC<{
   unloadVideoOnPaused: boolean
   loop: boolean
   preload: string
-}> = ({ src, unloadVideoOnPaused, loop, preload }) => {
-  const { videoRef, muted, cropTop, cropBottom, isHovering } =
-    useHoverVideoPlayer()
+}> = ({ src, loop, preload }) => {
+  const {
+    videoRef,
+    muted,
+    cropTop,
+    cropBottom,
+    isHovering,
+    isMobile,
+    controlsVisible,
+    setProgress,
+    setSeekProgressHandler,
+    setVideoLoading,
+    setVideoPlaying,
+  } = useHoverVideoPlayer()
   const isVimeoVideo = isVimeoUrl(src)
   const containerRef = useRef<HTMLDivElement>(null)
   const playerRef = useRef<VimeoPlayer | null>(null)
+  const shouldPlayVimeo = isMobile ? controlsVisible : isHovering
+  const shouldPlayVimeoRef = useRef(shouldPlayVimeo)
+
+  useEffect(() => {
+    shouldPlayVimeoRef.current = shouldPlayVimeo
+  }, [shouldPlayVimeo])
 
   useEffect(() => {
     if (!isVimeoVideo || !containerRef.current) return
 
     const videoId = src.split("/").pop() || ""
     let player: VimeoPlayer | null = null
+    setVideoLoading(true)
 
     loadVimeoSDK()
       .then((Vimeo) => {
@@ -697,45 +797,50 @@ const HoverVideoPlayerVideo: React.FC<{
         })
 
         playerRef.current = player
+        setSeekProgressHandler(async (value) => {
+          const duration = await player?.getDuration()
+          if (!duration || !Number.isFinite(duration)) return
+
+          await player?.setCurrentTime((value / 100) * duration)
+        })
 
         player.ready().then(() => {
           console.log("Vimeo video loaded")
-          if (isHovering) {
-            player?.play()
+          setVideoLoading(false)
+
+          if (shouldPlayVimeoRef.current) {
+            player
+              ?.play()
+              .then(() => setVideoPlaying(true))
+              .catch((error) => {
+                setVideoPlaying(false)
+                console.error("Vimeo play error:", error)
+              })
           }
         })
 
-        // Add hover effect handlers
-        const handlePlay = () => {
-          if (player && isHovering) {
-            player.play().catch((error) => {
-              console.error("Vimeo play error:", error)
-            })
-          }
-        }
+        player.on("play", () => {
+          console.log("Vimeo video playing")
+          setVideoLoading(false)
+          setVideoPlaying(true)
+        })
+        player.on("pause", () => {
+          console.log("Vimeo video paused")
+          setVideoPlaying(false)
+        })
+        player.on("timeupdate", (data) => {
+          if (!data.duration || !Number.isFinite(data.duration)) return
 
-        const handlePause = () => {
-          if (player) {
-            player.pause().catch((error) => {
-              console.error("Vimeo pause error:", error)
-            })
-          }
-        }
-
-        // Watch for hover state changes
-        if (isHovering) {
-          handlePlay()
-        } else {
-          handlePause()
-        }
-
-        player.on("play", () => console.log("Vimeo video playing"))
-        player.on("pause", () => console.log("Vimeo video paused"))
+          setProgress((data.seconds / data.duration) * 100)
+        })
         player.on("error", (err) => {
+          setVideoLoading(false)
+          setVideoPlaying(false)
           console.error("Vimeo player error:", err)
         })
       })
       .catch((error) => {
+        setVideoLoading(false)
         console.error("Failed to load Vimeo SDK:", error)
       })
 
@@ -744,8 +849,47 @@ const HoverVideoPlayerVideo: React.FC<{
         player.destroy()
         playerRef.current = null
       }
+      setSeekProgressHandler(null)
     }
-  }, [isVimeoVideo, src, muted, loop, isHovering])
+  }, [
+    isVimeoVideo,
+    src,
+    muted,
+    loop,
+    setProgress,
+    setSeekProgressHandler,
+    setVideoLoading,
+    setVideoPlaying,
+  ])
+
+  useEffect(() => {
+    if (!isVimeoVideo) return
+
+    const player = playerRef.current
+    if (!player) return
+
+    if (shouldPlayVimeo) {
+      setVideoLoading(true)
+      player
+        .play()
+        .then(() => {
+          setVideoLoading(false)
+          setVideoPlaying(true)
+        })
+        .catch((error) => {
+          setVideoLoading(false)
+          setVideoPlaying(false)
+          console.error("Vimeo play error:", error)
+        })
+    } else {
+      player
+        .pause()
+        .then(() => setVideoPlaying(false))
+        .catch((error) => {
+          console.error("Vimeo pause error:", error)
+        })
+    }
+  }, [isVimeoVideo, shouldPlayVimeo, setVideoLoading, setVideoPlaying])
 
   if (isVimeoVideo) {
     return <div ref={containerRef} className="absolute inset-0" />
@@ -766,7 +910,6 @@ const HoverVideoPlayerVideo: React.FC<{
       playsInline
       crossOrigin="anonymous"
       aria-label="Video player"
-      role="application"
     />
   )
 }
@@ -775,20 +918,26 @@ const HoverVideoPlayerVideo: React.FC<{
  * Thumbnail component shown when video is not playing
  */
 const HoverVideoPlayerThumbnail: React.FC<{ src: string }> = ({ src }) => {
-  const { cropTop, cropBottom, isHovering, isLoading, isPlaying } =
-    useHoverVideoPlayer()
-
-  // Only show thumbnail when not playing and not hovering, or when loading
-  if ((isPlaying || isHovering) && !isLoading) return null
+  const { cropTop, cropBottom, isLoading, isPlaying } = useHoverVideoPlayer()
+  const shouldReduceMotion = useReducedMotion()
+  const shouldShowThumbnail = !isPlaying || isLoading
 
   return (
-    <div
-      className={cn("absolute inset-0 w-full h-full")}
+    <motion.div
+      className={cn(
+        "absolute inset-0 z-1 w-full h-full pointer-events-none transform-gpu"
+      )}
       style={{
         top: `-${cropTop}%`,
         bottom: `-${cropBottom}%`,
         height: `calc(100% + ${cropTop + cropBottom}%)`,
       }}
+      animate={{
+        opacity: shouldShowThumbnail ? 1 : 0,
+        scale: shouldShowThumbnail ? 1 : 1.01,
+      }}
+      initial={false}
+      transition={shouldReduceMotion ? { duration: 0 } : hoverTransition}
     >
       <Image
         src={src}
@@ -798,7 +947,7 @@ const HoverVideoPlayerThumbnail: React.FC<{ src: string }> = ({ src }) => {
         className="object-cover"
         priority
       />
-    </div>
+    </motion.div>
   )
 }
 
@@ -809,21 +958,28 @@ const HoverVideoPlayerControls: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const { isHovering, isMobile, controlsVisible } = useHoverVideoPlayer()
+  const shouldReduceMotion = useReducedMotion()
 
   const shouldShowControls = isMobile ? controlsVisible : isHovering
 
   return (
-    <motion.div
-      className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black to-transparent"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{
-        opacity: shouldShowControls ? 1 : 0,
-        y: shouldShowControls ? 0 : 20,
-      }}
-      transition={{ duration: 0.3 }}
-    >
-      {children}
-    </motion.div>
+    <AnimatePresence initial={false}>
+      {shouldShowControls && (
+        <motion.div
+          className="absolute bottom-0 left-0 right-0 z-40 p-4 bg-linear-to-t from-black to-transparent"
+          initial={
+            shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }
+          }
+          animate={{ opacity: 1, y: 0 }}
+          exit={
+            shouldReduceMotion ? { opacity: 0, y: 0 } : { opacity: 0, y: 8 }
+          }
+          transition={shouldReduceMotion ? { duration: 0 } : hoverSpring}
+        >
+          {children}
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
 
@@ -834,16 +990,17 @@ const HoverVideoPlayerHoverOverlay: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const { isHovering, isLoading } = useHoverVideoPlayer()
+  const shouldReduceMotion = useReducedMotion()
 
   return (
-    <AnimatePresence>
+    <AnimatePresence initial={false}>
       {isHovering && !isLoading && (
         <motion.div
           className="absolute inset-0 z-30 flex items-center justify-center"
-          initial={{ opacity: 0 }}
+          initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
+          transition={shouldReduceMotion ? { duration: 0 } : hoverTransition}
         >
           {children}
         </motion.div>
@@ -859,16 +1016,17 @@ const HoverVideoPlayerPausedOverlay: React.FC<{
   children: React.ReactNode
 }> = ({ children }) => {
   const { isPlaying, isLoading, isHovering } = useHoverVideoPlayer()
+  const shouldReduceMotion = useReducedMotion()
 
   return (
-    <AnimatePresence>
+    <AnimatePresence initial={false}>
       {!isPlaying && !isLoading && !isHovering && (
         <motion.div
           className="absolute inset-0 z-10 flex items-center justify-center bg-black bg-opacity-50"
-          initial={{ opacity: 0 }}
+          initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
+          transition={shouldReduceMotion ? { duration: 0 } : hoverTransition}
         >
           {children}
         </motion.div>
@@ -884,16 +1042,17 @@ const HoverVideoPlayerLoadingOverlay: React.FC<{
   children: React.ReactNode
 }> = ({ children }) => {
   const { isLoading } = useHoverVideoPlayer()
+  const shouldReduceMotion = useReducedMotion()
 
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence initial={false} mode="wait">
       {isLoading && (
         <motion.div
           className="absolute inset-0 z-20 flex items-center justify-center bg-black bg-opacity-50"
-          initial={{ opacity: 0 }}
+          initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
+          transition={shouldReduceMotion ? { duration: 0 } : hoverTransition}
         >
           {children}
         </motion.div>
@@ -959,7 +1118,7 @@ const HoverVideoPlayerVolumeControl: React.FC = () => {
  * Progress bar component for video timeline
  */
 const HoverVideoPlayerProgressBar: React.FC = () => {
-  const { progress, setProgress, videoRef } = useHoverVideoPlayer()
+  const { progress, seekProgress } = useHoverVideoPlayer()
 
   return (
     <Slider
@@ -969,11 +1128,7 @@ const HoverVideoPlayerProgressBar: React.FC = () => {
       max={100}
       step={0.1}
       onValueChange={(value) => {
-        if (videoRef.current) {
-          const newTime = (value[0] / 100) * videoRef.current.duration
-          videoRef.current.currentTime = newTime
-          setProgress(value[0])
-        }
+        seekProgress(value[0])
       }}
       aria-label="Video progress"
     />

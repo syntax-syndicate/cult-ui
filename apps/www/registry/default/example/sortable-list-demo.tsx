@@ -342,7 +342,8 @@ function SortableListDemo() {
                       >
                         <DirectionAwareTabs
                           className="mr-auto bg-transparent pr-2"
-                          rounded="rounded-sm "
+                          rounded="rounded-lg"
+                          roundedInner="rounded-[5px]"
                           tabs={tabs}
                           onChange={() =>
                             setTabChangeRerender(tabChangeRerender + 1)

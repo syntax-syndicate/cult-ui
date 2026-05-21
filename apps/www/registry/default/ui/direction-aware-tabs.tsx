@@ -15,7 +15,10 @@ type Tab = {
 interface OgImageSectionProps {
   tabs: Tab[]
   className?: string
+  /** Outer container radius (e.g. `rounded-lg`) */
   rounded?: string
+  /** Inner tab/bubble radius — should be outer radius minus container padding (~3px) */
+  roundedInner?: string
   onChange?: () => void
 }
 
@@ -23,6 +26,7 @@ function DirectionAwareTabs({
   tabs,
   className,
   rounded,
+  roundedInner,
   onChange,
 }: OgImageSectionProps) {
   const [activeTab, setActiveTab] = useState(0)
@@ -80,15 +84,17 @@ function DirectionAwareTabs({
               activeTab === tab.id
                 ? "text-white"
                 : "hover:text-neutral-300/60  text-neutral-200/80",
-              rounded
+              rounded ? roundedInner : undefined
             )}
             style={{ WebkitTapHighlightColor: "transparent" }}
           >
             {activeTab === tab.id && (
               <motion.span
                 layoutId="bubble"
-                className="absolute  inset-0 z-10 bg-neutral-700 mix-blend-difference shadow-inner-shadow border border-white/10"
-                style={rounded ? { borderRadius: 9 } : { borderRadius: 9999 }}
+                className={cn(
+                  "absolute inset-0 z-10 bg-neutral-700 mix-blend-difference shadow-inner-shadow border border-white/10",
+                  rounded ? roundedInner : "rounded-full"
+                )}
                 transition={{ type: "spring", bounce: 0.19, duration: 0.4 }}
               />
             )}

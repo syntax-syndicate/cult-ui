@@ -1,6 +1,6 @@
 "use client"
 
-import { useLayoutEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { Check, Copy } from "lucide-react"
 import { AnimatePresence, motion } from "motion/react"
 
@@ -29,7 +29,30 @@ export function CodeBlock({
   const [copied, setCopied] = useState(false)
   const [direction, setDirection] = useState(0)
   const preRef = useRef<HTMLPreElement>(null)
+  const tabsContainerRef = useRef<HTMLDivElement>(null)
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
   const [hasOverflow, setHasOverflow] = useState(false)
+  const [indicator, setIndicator] = useState<{
+    left: number
+    width: number
+  } | null>(null)
+
+  const measureIndicator = useCallback(() => {
+    const container = tabsContainerRef.current
+    const activeEl = tabRefs.current[activeTab]
+
+    if (!container || !activeEl) {
+      return
+    }
+
+    const containerRect = container.getBoundingClientRect()
+    const tabRect = activeEl.getBoundingClientRect()
+
+    setIndicator({
+      left: tabRect.left - containerRect.left,
+      width: tabRect.width,
+    })
+  }, [activeTab])
 
   const codeContent = useMemo(() => {
     if (tabs && tabs.length > 0) {
@@ -64,6 +87,27 @@ export function CodeBlock({
       resizeObserver.disconnect()
     }
   }, [activeTab])
+
+  useLayoutEffect(() => {
+    measureIndicator()
+
+    const resizeObserver = new ResizeObserver(measureIndicator)
+    const container = tabsContainerRef.current
+
+    if (container) {
+      resizeObserver.observe(container)
+    }
+
+    for (const tab of tabRefs.current) {
+      if (tab) {
+        resizeObserver.observe(tab)
+      }
+    }
+
+    return () => {
+      resizeObserver.disconnect()
+    }
+  }, [measureIndicator])
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(currentCode)
@@ -101,10 +145,13 @@ export function CodeBlock({
               "dark:scrollbar-thumb-white/20 dark:hover:scrollbar-thumb-white/25"
             )}
           >
-            <div className="relative flex gap-1">
+            <div ref={tabsContainerRef} className="relative flex gap-1">
               {codeContent.map((tab, index) => (
                 <button
                   key={`${tab.label}-${index}`}
+                  ref={(element) => {
+                    tabRefs.current[index] = element
+                  }}
                   type="button"
                   role="tab"
                   aria-selected={activeTab === index}
@@ -121,19 +168,24 @@ export function CodeBlock({
                   )}
                 >
                   {tab.label}
-                  {activeTab === index && (
-                    <motion.div
-                      layoutId="activeTabIndicator"
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-950 dark:bg-zinc-50 rounded-full"
-                      transition={{
-                        type: "spring",
-                        stiffness: 500,
-                        damping: 35,
-                      }}
-                    />
-                  )}
                 </button>
               ))}
+              {indicator && (
+                <motion.div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute bottom-0 h-0.5 rounded-full bg-zinc-950 dark:bg-zinc-50"
+                  initial={false}
+                  animate={{
+                    left: indicator.left,
+                    width: indicator.width,
+                  }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 500,
+                    damping: 35,
+                  }}
+                />
+              )}
             </div>
           </div>
         </div>
